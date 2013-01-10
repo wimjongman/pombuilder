@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         id="pomnature"
+         name="pomnature"
+         point="org.eclipse.core.resources.natures">
+      <runtime>
+         <run
+               class="com.remainsoftware.tycho.pombuilder.core.internal.ProjectNature">
+         </run>
+      </runtime>
+      <requires-nature
+            id="org.eclipse.jdt.core.javanature">
+      </requires-nature>
+      <builder
+            id="com.remainsoftware.tycho.pombuilder.core.pombuilder">
+      </builder>
+   </extension>
+   <extension
+         id="pombuilder"
+         name="pombuilder"
+         point="org.eclipse.core.resources.builders">
+      <builder
+            hasNature="true">
+         <run
+               class="com.remainsoftware.tycho.pombuilder.core.internal.Builder">
+         </run>
+      </builder>
+   </extension>
+
+</plugin>

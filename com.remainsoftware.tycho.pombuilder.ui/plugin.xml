@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   
+   <extension id="dsAnnotationProblem" point="org.eclipse.core.resources.markers">
+      <super type="org.eclipse.core.resources.problemmarker"/>
+      <persistent value="true"/>
+   </extension>
+   
+   <extension point="org.eclipse.ui.popupMenus">
+
+      <objectContribution id="enableNatureAction"
+                          objectClass="org.eclipse.core.resources.IProject"
+                          adaptable="true">
+         <action id="com.remainsoftware.tycho.nature.ui.internal.actions.anableNatureAction"
+                 class="com.remainsoftware.tycho.pombuilder.ui.internal.actions.EnableNatureAction"
+                 label="Enable Pom Builder"
+                 style="push"
+	             menubarPath="org.eclipse.ui.projectConfigure/additions"
+                 enablesFor="+"/>
+         <visibility>
+           <and>
+             <objectState name="open" value="true"/>
+             <not>
+               <objectState name="nature" value="com.remainsoftware.tycho.nature.core.pomnature"/>
+             </not>
+           </and>
+         </visibility>
+      </objectContribution>
+   </extension>
+   
+      <extension point="org.eclipse.ui.popupMenus">
+
+      <objectContribution id="disableNatureAction"
+                          objectClass="org.eclipse.core.resources.IProject"
+                          adaptable="true">
+         <action id="com.remainsoftware.tycho.nature.ui.internal.actions.disableNatureAction"
+                 class="com.remainsoftware.tycho.pombuilder.ui.internal.actions.DisableNatureAction"
+                 label="Disable Pom Builder"
+                 style="push"
+	             menubarPath="org.eclipse.ui.projectConfigure/additions"
+                 enablesFor="+"/>
+         <visibility>
+           <and>
+             <objectState name="open" value="true"/>
+             <objectState name="nature" value="com.remainsoftware.tycho.nature.core.pomnature"/>
+           </and>
+         </visibility>
+      </objectContribution>
+   </extension>
+</plugin>
