@@ -11,33 +11,39 @@
  ******************************************************************************/
 package com.remainsoftware.tycho.pombuilder.core.internal;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringBufferInputStream;
 import java.util.HashMap;
-import java.util.Map;
 
-import javax.xml.bind.JAXBException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
-import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.osgi.util.ManifestElement;
-import org.osgi.framework.BundleException;
-
-import com.remainsoftware.tycho.pombuilder.core.Constants;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * <p>
  * </p>
  * 
- * @author Gerd W&uuml;therich (gerd@gerd-wuetherich.de)
+ * @author Wim Jongman
  */
 public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 
@@ -47,15 +53,12 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 	@Override
 	public boolean visit(IResource resource) throws CoreException {
 
-		//
 		if (resource.getType() != IResource.FILE) {
 			return true;
 		}
 
-		//
 		handle(resource);
 
-		//
 		return false;
 	}
 
@@ -65,18 +68,10 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 	@Override
 	public boolean visit(IResourceDelta delta) throws CoreException {
 
-		//
 		if (delta.getKind() == IResourceDelta.ADDED) {
-
-			//
 			return visit(delta.getResource());
 
 		} else if (delta.getKind() == IResourceDelta.REMOVED) {
-
-			//
-			// GeneratedComponentDescriptionsStore.deleteGeneratedFiles(delta.getResource().getProject(),
-			// delta.getResource()
-			// .getFullPath());
 
 		} else if (delta.getKind() == IResourceDelta.CHANGED) {
 			return visit(delta.getResource());
@@ -94,12 +89,30 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 	 */
 	private void handle(IResource resource) throws CoreException {
 
-		//
-		if (!resource.getName().equals("MANIFEST.MF")) {
+		if (resource.getName().equals("MANIFEST.MF")) {
+			parseManifest(resource);
 			return;
 		}
 
-		parseManifest(resource);
+		if (resource.getName().equals("feature.xml")) {
+			parseFeature(resource);
+			return;
+		}
+
+		if (resource.getName().endsWith(".product")) {
+			parseProduct(resource);
+			return;
+		}
+
+	}
+
+	private void parseProduct(IResource resource) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void parseFeature(IResource resource) {
+		// TODO Auto-generated method stub
 
 	}
 
@@ -108,17 +121,15 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 		FileInputStream fisManifest = null;
 		boolean fisManifestOpen = false;
 
-		FileInputStream fisPom = null;
-		boolean fisPomOpen = false;
-
 		try {
 
 			fisManifest = new FileInputStream(resource.getLocation().toFile());
 			HashMap<String, String> map = new HashMap<String, String>();
 			ManifestElement.parseBundleManifest(fisManifest, map);
 			fisManifestOpen = true;
-			
-			writePomBundle(map.get("Bundle-Version"), map.get("Bundle-SymbolicName"));
+
+			writePomBundle(resource.getProject(), map.get("Bundle-Version"), map.get("Bundle-SymbolicName"),
+					map.get("Parent-Project"));
 
 			System.out.println(map);
 		} catch (Exception e) {
@@ -130,15 +141,85 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 			if (fisManifestOpen) {
 				closeInputStream(fisManifest);
 			}
-			if (fisPomOpen) {
-				closeInputStream(fisPom);
-			}
 		}
 	}
 
-	private void writePomBundle(String version, String manifest) {
-		// TODO Auto-generated method stub
-		
+	private void writePomBundle(IProject project, String version, String symbolicName, String parentProject) {
+
+		try {
+
+			File dir = new File(project.getLocationURI());
+			String pomPath = dir.getAbsolutePath() + File.separator + "pom.xml";
+			File pomFile = new File(pomPath);
+
+			if (pomFile.exists()) {
+				return;
+			}
+
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.newDocument();
+
+			Element projectElement = doc.createElement("project");
+			doc.appendChild(projectElement);
+
+			Element modelVersion = doc.createElement("modelversion");
+			modelVersion.appendChild(doc.createTextNode("4.0.0"));
+			projectElement.appendChild(modelVersion);
+
+			Element parent = doc.createElement("parent");
+			projectElement.appendChild(parent);
+
+			Element parentGroupId = doc.createElement("groupId");
+			parentGroupId.appendChild(doc.createTextNode("replace.with.real.parent.groupId"));
+			parent.appendChild(parentGroupId);
+
+			Element parentArtifactId = doc.createElement("artifactId");
+			parentArtifactId.appendChild(doc.createTextNode("replace.with.real.parent.artifactId"));
+			parent.appendChild(parentArtifactId);
+
+			Element parentVersion = doc.createElement("version");
+			parentVersion.appendChild(doc.createTextNode("replace.with.real.parent.version"));
+			parent.appendChild(parentVersion);
+
+			Element groupId = doc.createElement("groupId");
+			groupId.appendChild(doc.createTextNode("replace.with.real.groupId"));
+			projectElement.appendChild(groupId);
+
+			Element artifactId = doc.createElement("artifactId");
+			artifactId.appendChild(doc.createTextNode(symbolicName));
+			projectElement.appendChild(artifactId);
+
+			Element versionElement = doc.createElement("version");
+			versionElement.appendChild(doc.createTextNode(version));
+			projectElement.appendChild(versionElement);
+
+			Element packaging = doc.createElement("packaging");
+			packaging.appendChild(doc.createTextNode("eclipse-plugin"));
+			projectElement.appendChild(packaging);
+
+			// write the content
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(pomFile);
+
+			transformer.transform(source, result);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	private static String getTagValue(String sTag, Element eElement) {
+		NodeList nlList = eElement.getElementsByTagName(sTag).item(0).getChildNodes();
+
+		Node nValue = (Node) nlList.item(0);
+
+		return nValue.getNodeValue();
 	}
 
 	private void closeInputStream(InputStream stream) {
