@@ -11,33 +11,22 @@
  ******************************************************************************/
 package com.remainsoftware.tycho.pombuilder.core.internal;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.osgi.util.ManifestElement;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+
+import com.remainsoftware.tycho.pombuilder.core.Constants;
+import com.remainsoftware.tycho.pombuilder.core.IPom;
 
 /**
  * <p>
@@ -89,19 +78,24 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 	 */
 	private void handle(IResource resource) throws CoreException {
 
-		if (resource.getName().equals("MANIFEST.MF")) {
-			parseManifest(resource);
-			return;
-		}
+		try {
 
-		if (resource.getName().equals("feature.xml")) {
-			parseFeature(resource);
-			return;
-		}
+			if (resource.getName().equals("MANIFEST.MF")) {
+				parseManifest(resource);
+				return;
+			}
 
-		if (resource.getName().endsWith(".product")) {
-			parseProduct(resource);
-			return;
+			if (resource.getName().equals("feature.xml")) {
+				parseFeature(resource);
+				return;
+			}
+
+			if (resource.getName().endsWith(".product")) {
+				parseProduct(resource);
+				return;
+			}
+		} catch (Exception e) {
+			throw new CoreException(new Status(IStatus.ERROR, Constants.CORE, e.getMessage(), e));
 		}
 
 	}
@@ -116,25 +110,23 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 
 	}
 
-	private void parseManifest(IResource resource) {
+	private void parseManifest(IResource resource) throws Exception {
 
 		FileInputStream fisManifest = null;
 		boolean fisManifestOpen = false;
 
 		try {
-
 			fisManifest = new FileInputStream(resource.getLocation().toFile());
 			HashMap<String, String> map = new HashMap<String, String>();
 			ManifestElement.parseBundleManifest(fisManifest, map);
 			fisManifestOpen = true;
 
-			writePomBundle(resource.getProject(), map.get("Bundle-Version"), map.get("Bundle-SymbolicName"),
-					map.get("Parent-Project"));
-
-			System.out.println(map);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			IPom pom = new Pom(resource);
+			pom.setVersion(map.get("Bundle-Version"));
+			pom.setArtifactId(map.get("Bundle-SymbolicName"));
+			pom.setGroupId(map.get("Bundle-SymbolicName"));
+			pom.setParentProject(map.get("Parent-Project"));
+			pom.write();
 		}
 
 		finally {
@@ -144,110 +136,12 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 		}
 	}
 
-	private void writePomBundle(IProject project, String version, String symbolicName, String parentProject) {
 
-		try {
-
-			File dir = new File(project.getLocationURI());
-			String pomPath = dir.getAbsolutePath() + File.separator + "pom.xml";
-			File pomFile = new File(pomPath);
-
-			if (pomFile.exists()) {
-				return;
-			}
-
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			Document doc = dBuilder.newDocument();
-
-			Element projectElement = doc.createElement("project");
-			doc.appendChild(projectElement);
-
-			Element modelVersion = doc.createElement("modelversion");
-			modelVersion.appendChild(doc.createTextNode("4.0.0"));
-			projectElement.appendChild(modelVersion);
-
-			Element parent = doc.createElement("parent");
-			projectElement.appendChild(parent);
-
-			Element parentGroupId = doc.createElement("groupId");
-			parentGroupId.appendChild(doc.createTextNode("replace.with.real.parent.groupId"));
-			parent.appendChild(parentGroupId);
-
-			Element parentArtifactId = doc.createElement("artifactId");
-			parentArtifactId.appendChild(doc.createTextNode("replace.with.real.parent.artifactId"));
-			parent.appendChild(parentArtifactId);
-
-			Element parentVersion = doc.createElement("version");
-			parentVersion.appendChild(doc.createTextNode("replace.with.real.parent.version"));
-			parent.appendChild(parentVersion);
-
-			Element groupId = doc.createElement("groupId");
-			groupId.appendChild(doc.createTextNode("replace.with.real.groupId"));
-			projectElement.appendChild(groupId);
-
-			Element artifactId = doc.createElement("artifactId");
-			artifactId.appendChild(doc.createTextNode(symbolicName));
-			projectElement.appendChild(artifactId);
-
-			Element versionElement = doc.createElement("version");
-			versionElement.appendChild(doc.createTextNode(version));
-			projectElement.appendChild(versionElement);
-
-			Element packaging = doc.createElement("packaging");
-			packaging.appendChild(doc.createTextNode("eclipse-plugin"));
-			projectElement.appendChild(packaging);
-
-			// write the content
-			TransformerFactory transformerFactory = TransformerFactory.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(pomFile);
-
-			transformer.transform(source, result);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-	}
-
-	private static String getTagValue(String sTag, Element eElement) {
-		NodeList nlList = eElement.getElementsByTagName(sTag).item(0).getChildNodes();
-
-		Node nValue = (Node) nlList.item(0);
-
-		return nValue.getNodeValue();
-	}
 
 	private void closeInputStream(InputStream stream) {
 		try {
 			stream.close();
 		} catch (IOException e) {
 		}
-	}
-
-	/**
-	 * <p>
-	 * </p>
-	 * 
-	 * @param icompilationUnit
-	 * @throws CoreException
-	 */
-	private void parse(IResource resource) throws CoreException {
-
-		// get the output file
-		IFolder folder = resource.getProject().getFolder("/");
-		IFile file = folder.getFile("pom.xml");
-
-		if (!file.exists()) {
-
-			// TODO create pom
-		}
-
-		// finally we have to refresh the local folder
-		folder.refreshLocal(IResource.DEPTH_INFINITE, null);
 	}
 }
