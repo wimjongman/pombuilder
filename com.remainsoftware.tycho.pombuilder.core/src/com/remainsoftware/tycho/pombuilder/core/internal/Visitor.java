@@ -85,11 +85,6 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 				return;
 			}
 
-			if (resource.getName().equals("feature.xml")) {
-				parseFeature(resource);
-				return;
-			}
-
 			if (resource.getName().endsWith(".product")) {
 				parseProduct(resource);
 				return;
@@ -125,7 +120,7 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 			pom.setVersion(map.get("Bundle-Version"));
 			pom.setArtifactId(map.get("Bundle-SymbolicName"));
 			pom.setGroupId(map.get("Bundle-SymbolicName"));
-			pom.setParentProject(map.get("Parent-Project"));
+			pom.setgetParentProject(map.get("Parent-Project"));
 			pom.write();
 		}
 

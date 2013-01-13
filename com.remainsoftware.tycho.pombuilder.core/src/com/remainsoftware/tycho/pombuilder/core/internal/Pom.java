@@ -168,6 +168,7 @@ public class Pom implements IPom {
 	@Override
 	public IPom setVersion(String version) {
 		this.version = version;
+		createSimpleElementWithText(VERZION, version);
 		return this;
 	}
 
@@ -178,31 +179,46 @@ public class Pom implements IPom {
 
 	@Override
 	public IPom setArtifactId(String artifactId) {
-		
 		this.artifactId = artifactId;
-		
-		Element parent = document.getElementById(PARENT);
-		if (parent == null) {
-			document.appendChild(document.createElement(PARENT));
-			parent = document.getElementById(PARENT);
-		}
+		createSimpleElementWithText(ARTIFACT_ID, artifactId);
+		return this;
+	}
 
-		??????
-		
-		
-		Element gid = document.getattrAttributeNode(GROUP_ID).getOwnerElement();
-		if (gid == null) {
-			gid = document.createElement(GROUP_ID);
+	private void createSimpleElementWithText(String elementName, String textValue) {
+
+		Element element = document.getElementById(elementName);
+		if (element == null) {
+			element = document.createElement(elementName);
 		}
 
 		else {
-			NodeList childNodes = gid.getChildNodes();
+			NodeList childNodes = element.getChildNodes();
 			for (int i = 0; i < childNodes.getLength(); i++) {
-				gid.removeChild(childNodes.item(i));
+				element.removeChild(childNodes.item(i));
 			}
 		}
-		gid.appendChild(document.createTextNode(groupId));
-		return this;
+
+		element.appendChild(document.createTextNode(textValue));
+	}
+
+	private void createParentElementWithText(String elementName, String textValue) {
+
+		Element parent = document.getElementById(PARENT);
+
+		Element element = parent.getAttributeNode(elementName).getOwnerElement();
+		if (element == null) {
+			element = document.createElement(elementName);
+			parent.appendChild(element);
+		}
+
+		else {
+			NodeList childNodes = element.getChildNodes();
+			for (int i = 0; i < childNodes.getLength(); i++) {
+				element.removeChild(childNodes.item(i));
+			}
+		}
+
+		element.appendChild(document.createTextNode(textValue));
 	}
 
 	@Override
@@ -213,6 +229,7 @@ public class Pom implements IPom {
 	@Override
 	public IPom setGroupId(String groupId) {
 		this.groupId = groupId;
+		createSimpleElementWithText(GROUP_ID, groupId);
 		return this;
 	}
 
@@ -247,66 +264,15 @@ public class Pom implements IPom {
 	}
 
 	private void setParentVersion(String version) {
-		Element parent = document.getElementById(PARENT);
-		if (parent == null) {
-			document.appendChild(document.createElement(PARENT));
-			parent = document.getElementById(PARENT);
-		}
-
-		Element ver = parent.getAttributeNode(VERZION).getOwnerElement();
-		if (ver == null) {
-			ver = document.createElement(VERZION);
-		}
-
-		else {
-			NodeList childNodes = ver.getChildNodes();
-			for (int i = 0; i < childNodes.getLength(); i++) {
-				ver.removeChild(childNodes.item(i));
-			}
-		}
-		ver.appendChild(document.createTextNode(version));
+		createParentElementWithText(VERZION, version);
 	}
 
 	private void setParentArtifactId(String artifactId) {
-		Element parent = document.getElementById(PARENT);
-		if (parent == null) {
-			document.appendChild(document.createElement(PARENT));
-			parent = document.getElementById(PARENT);
-		}
-
-		Element artifact = parent.getAttributeNode(ARTIFACT_ID).getOwnerElement();
-		if (artifact == null) {
-			artifact = document.createElement(ARTIFACT_ID);
-		}
-
-		else {
-			NodeList childNodes = artifact.getChildNodes();
-			for (int i = 0; i < childNodes.getLength(); i++) {
-				artifact.removeChild(childNodes.item(i));
-			}
-		}
-		artifact.appendChild(document.createTextNode(artifactId));
+		createParentElementWithText(ARTIFACT_ID, artifactId);
 	}
 
 	private void setParentGroupId(String groupId) {
-		Element parent = document.getElementById(PARENT);
-		if (parent == null) {
-			document.appendChild(document.createElement(PARENT));
-			parent = document.getElementById(PARENT);
-		}
-
-		Element gid = parent.getAttributeNode(GROUP_ID).getOwnerElement();
-		if (gid == null) {
-			gid = document.createElement(GROUP_ID);
-		}
-
-		else {
-			NodeList childNodes = gid.getChildNodes();
-			for (int i = 0; i < childNodes.getLength(); i++) {
-				gid.removeChild(childNodes.item(i));
-			}
-		}
-		gid.appendChild(document.createTextNode(groupId));
+		createParentElementWithText(GROUP_ID, artifactId);
 	}
 
 	@Override
