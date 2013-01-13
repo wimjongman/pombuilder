@@ -16,4 +16,4 @@ The Manifest then contains an error, add the field
 <b>Parent-Project: name.of.parent.project</b>
 
 
-Refresh of resources is a bit buggy. Try to refresh the project if you have problems.
+Refresh of resources is buggy. Try to refresh the project if you have problems.
