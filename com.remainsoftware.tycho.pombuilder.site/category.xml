@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.remainsoftware.pombuilder.feature_0.1.0.qualifier.jar" id="com.remainsoftware.pombuilder.feature" version="0.1.0.qualifier">
+      <category name="pombuilder"/>
+   </feature>
+   <category-def name="pombuilder" label="pombuilder"/>
+</site>
