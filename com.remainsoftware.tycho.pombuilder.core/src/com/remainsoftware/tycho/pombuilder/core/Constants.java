@@ -19,5 +19,9 @@ public class Constants {
 	public static final String BUILDER_ID = CORE + "." + "pombuilder";
 
 	public static final String POM_NATURE = CORE + "." + "pomnature";
+	
+	public static final String POM_PROBLEM_MARKER = CORE + "." + "pombuilderproblem";
+
+	public static final String PARENT_PROJECT = "Parent-Project";
 
 }

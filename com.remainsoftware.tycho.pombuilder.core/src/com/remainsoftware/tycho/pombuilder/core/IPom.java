@@ -12,8 +12,12 @@ package com.remainsoftware.tycho.pombuilder.core;
 
 import java.io.File;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+
 /**
- * Interface to a Tycho pom file.
+ * Tycho pom file model. This interface is not intended to be implemented by
+ * clients.
  * 
  * @author Wim Jongman
  * 
@@ -77,15 +81,6 @@ public interface IPom {
 	IPom setgetParentProject(String project) throws PomBuilderException;
 
 	/**
-	 * Sets all the required parent attributes based on the pom.xml that the
-	 * passed parameter points to. The project is just the simple projectname,
-	 * not an URL or anything.
-	 * 
-	 * @see #setParentProject(String)
-	 */
-	String getParentProjectName();
-
-	/**
 	 * @return the {@link IPom} that is the parent of this pom. Could be null if
 	 *         {@link #setParentProject(String)} was never called.
 	 * @see #setParent(String)
@@ -120,4 +115,31 @@ public interface IPom {
 	 * @throws PomBuilderException
 	 */
 	IPom write() throws PomBuilderException;
+
+	/**
+	 * Sets the model version.
+	 * 
+	 * @param modelVersion
+	 *            the maven model version.
+	 * @return this
+	 */
+	IPom setModelVersion(String modelVersion);
+
+	/**
+	 * @return the model version
+	 * @see #getModelVersion()
+	 */
+	String getModelVersion();
+
+	/**
+	 * 
+	 * @return the project where this pom is located
+	 */
+	IProject getProject();
+
+	/**
+	 * 
+	 * @return the resource representing this pom
+	 */
+	IResource getResource();
 }

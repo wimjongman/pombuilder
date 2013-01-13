@@ -12,6 +12,7 @@
 package com.remainsoftware.tycho.pombuilder.core.internal;
 
 import java.io.File;
+import java.io.IOException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -28,6 +29,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.remainsoftware.tycho.pombuilder.core.IPom;
@@ -58,21 +60,19 @@ public class Pom implements IPom {
 
 	private static final String PARENT = "parent";
 
+	private static final String MODEL_VERSION = "modelVersion";
+
+	private static final String RELATIVE_PATH = "relativePath";
+
 	private final File pomFile;
 
 	private Document document;
 
-	private String packagingType;
-
-	private String projectName;
-
 	private IPom parentPom;
 
-	private String groupId;
+	private IProject project;
 
-	private String artifactId;
-
-	private String version;
+	private final IResource resource;
 
 	/**
 	 * Creates a Pom object based on the project of the passed resource. If the
@@ -86,6 +86,9 @@ public class Pom implements IPom {
 	public Pom(IResource resource) throws PomBuilderException {
 
 		Assert.isNotNull(resource);
+
+		this.project = resource.getProject();
+		this.resource = project.getFile("pom.xml");
 
 		File dir = new File(resource.getProject().getLocationURI());
 		String pomPath = dir.getAbsolutePath() + File.separator + "pom.xml";
@@ -167,28 +170,36 @@ public class Pom implements IPom {
 
 	@Override
 	public IPom setVersion(String version) {
-		this.version = version;
 		createSimpleElementWithText(VERZION, version);
 		return this;
 	}
 
 	@Override
 	public String getVersion() {
-		return version;
+		if (document.getElementsByTagName(VERZION).getLength() == 0) {
+			return null;
+		}
+
+		Node element = document.getElementsByTagName(VERZION).item(0);
+		return element.getTextContent();
 	}
 
 	@Override
 	public IPom setArtifactId(String artifactId) {
-		this.artifactId = artifactId;
 		createSimpleElementWithText(ARTIFACT_ID, artifactId);
 		return this;
 	}
 
 	private void createSimpleElementWithText(String elementName, String textValue) {
 
-		Element element = document.getElementById(elementName);
+		Element project = document.getDocumentElement();
+		Element element = null;
+		if (project.getElementsByTagName(elementName).getLength() > 0) {
+			element = (Element) project.getElementsByTagName(elementName).item(0);
+		}
 		if (element == null) {
 			element = document.createElement(elementName);
+			project.appendChild(element);
 		}
 
 		else {
@@ -203,9 +214,21 @@ public class Pom implements IPom {
 
 	private void createParentElementWithText(String elementName, String textValue) {
 
-		Element parent = document.getElementById(PARENT);
+		Element project = (Element) document.getElementsByTagName(PROJECT).item(0);
+		Element parent = null;
+		if (project.getElementsByTagName(PARENT).getLength() == 0) {
+			parent = document.createElement(PARENT);
+			project.appendChild(parent);
+		} else {
+			parent = (Element) project.getElementsByTagName(PARENT).item(0);
+		}
 
-		Element element = parent.getAttributeNode(elementName).getOwnerElement();
+		Element element = null;
+
+		if (parent.getElementsByTagName(elementName).getLength() > 0) {
+			element = (Element) parent.getElementsByTagName(elementName).item(0);
+		}
+
 		if (element == null) {
 			element = document.createElement(elementName);
 			parent.appendChild(element);
@@ -223,35 +246,43 @@ public class Pom implements IPom {
 
 	@Override
 	public String getArtifactId() {
-		return artifactId;
+		if (document.getElementsByTagName(ARTIFACT_ID).getLength() == 0) {
+			return null;
+		}
+
+		Node element = document.getElementsByTagName(ARTIFACT_ID).item(0);
+		return element.getTextContent();
 	}
 
 	@Override
 	public IPom setGroupId(String groupId) {
-		this.groupId = groupId;
 		createSimpleElementWithText(GROUP_ID, groupId);
 		return this;
 	}
 
 	@Override
 	public String getGroupId() {
-		return groupId;
+		if (document.getElementsByTagName(GROUP_ID).getLength() == 0) {
+			return null;
+		}
+
+		Node element = document.getElementsByTagName(GROUP_ID).item(0);
+		return element.getTextContent();
 	}
 
 	@Override
 	public IPom setgetParentProject(String projectName) throws PomBuilderException {
-		this.projectName = projectName;
 
 		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
 		if (project == null) {
-			throw new PomBuilderException("Project " + project
+			throw new PomBuilderException("Project " + projectName
 					+ " was not found. If applicable, check the Parent-Project field in the MANIFEST.MF");
 		}
 
 		IResource pom = project.findMember("pom.xml");
 		if (pom == null) {
 			throw new PomBuilderException("File pom.xml was not found in project " + project
-					+ ". Make sure the parent pom exists before you refer to it.");
+					+ ". Make sure the project and the pom.xml exists before you refer to it.");
 		}
 
 		parentPom = new Pom(project);
@@ -259,8 +290,24 @@ public class Pom implements IPom {
 		setParentGroupId(parentPom.getGroupId());
 		setParentArtifactId(parentPom.getArtifactId());
 		setParentVersion(parentPom.getVersion());
+		setParentRelativePath(parentPom);
 
 		return getParent();
+	}
+
+	private IPom setParentRelativePath(IPom parentPom) throws PomBuilderException {
+
+		IProject project = parentPom.getProject();
+		File parent = new File(project.getLocationURI());
+		File pom = pomFile.getParentFile();
+
+		try {
+			createParentElementWithText(RELATIVE_PATH, FileUtil.getRelativeFile(parent, pom));
+		} catch (IOException e) {
+			throw new PomBuilderException(e);
+		}
+
+		return this;
 	}
 
 	private void setParentVersion(String version) {
@@ -272,12 +319,7 @@ public class Pom implements IPom {
 	}
 
 	private void setParentGroupId(String groupId) {
-		createParentElementWithText(GROUP_ID, artifactId);
-	}
-
-	@Override
-	public String getParentProjectName() {
-		return projectName;
+		createParentElementWithText(GROUP_ID, groupId);
 	}
 
 	@Override
@@ -287,13 +329,18 @@ public class Pom implements IPom {
 
 	@Override
 	public IPom setPackaging(String packaging) {
-		this.packagingType = packaging;
+		createSimpleElementWithText(PACKAGING, packaging);
 		return this;
 	}
 
 	@Override
 	public String getPackaging() {
-		return packagingType;
+		if (document.getElementsByTagName(PACKAGING).getLength() == 0) {
+			return null;
+		}
+
+		Node element = document.getElementsByTagName(PACKAGING).item(0);
+		return element.getTextContent();
 	}
 
 	@Override
@@ -318,4 +365,29 @@ public class Pom implements IPom {
 		return this;
 	}
 
+	@Override
+	public IPom setModelVersion(String modelVersion) {
+		createSimpleElementWithText(MODEL_VERSION, modelVersion);
+		return this;
+	}
+
+	@Override
+	public String getModelVersion() {
+		if (document.getElementsByTagName(MODEL_VERSION).getLength() == 0) {
+			return null;
+		}
+
+		Node element = document.getElementsByTagName(MODEL_VERSION).item(0);
+		return element.getTextContent();
+	}
+
+	@Override
+	public IProject getProject() {
+		return project;
+	}
+
+	@Override
+	public IResource getResource() {
+		return resource;
+	}
 }

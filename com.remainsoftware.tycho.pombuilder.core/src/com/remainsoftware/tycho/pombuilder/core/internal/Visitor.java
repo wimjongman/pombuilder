@@ -11,11 +11,16 @@
  ******************************************************************************/
 package com.remainsoftware.tycho.pombuilder.core.internal;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.Iterator;
 
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
@@ -27,6 +32,7 @@ import org.eclipse.osgi.util.ManifestElement;
 
 import com.remainsoftware.tycho.pombuilder.core.Constants;
 import com.remainsoftware.tycho.pombuilder.core.IPom;
+import com.remainsoftware.tycho.pombuilder.core.PomBuilderException;
 
 /**
  * <p>
@@ -107,6 +113,12 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 
 	private void parseManifest(IResource resource) throws Exception {
 
+		// remove previous markers
+		IMarker[] markers = resource.findMarkers(Constants.POM_PROBLEM_MARKER, false, IResource.DEPTH_ZERO);
+		for (IMarker marker : markers) {
+			marker.delete();
+		}
+
 		FileInputStream fisManifest = null;
 		boolean fisManifestOpen = false;
 
@@ -117,10 +129,31 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 			fisManifestOpen = true;
 
 			IPom pom = new Pom(resource);
+			pom.setModelVersion("4.0.0");
 			pom.setVersion(map.get("Bundle-Version"));
 			pom.setArtifactId(map.get("Bundle-SymbolicName"));
 			pom.setGroupId(map.get("Bundle-SymbolicName"));
-			pom.setgetParentProject(map.get("Parent-Project"));
+			pom.setPackaging("eclipse-plugin");
+
+			if (map.get("Parent-Project") == null || map.get("Parent-Project").trim().length() == 0) {
+				IMarker marker = resource.createMarker(Constants.POM_PROBLEM_MARKER);
+				marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
+				marker.setAttribute(IMarker.MESSAGE, "Variable '" + Constants.PARENT_PROJECT
+						+ "' has not been defined.");
+				marker.setAttribute(IMarker.LINE_NUMBER, 1);
+			} else {
+				try {
+					pom.setgetParentProject(map.get("Parent-Project"));
+				} catch (PomBuilderException e) {
+					IMarker marker = resource.createMarker(Constants.POM_PROBLEM_MARKER);
+					marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);
+					marker.setAttribute(IMarker.MESSAGE, e.getMessage());
+					marker.setAttribute(IMarker.LINE_NUMBER,
+							calculateLine(resource.getLocation().toFile(), "Parent-Project"));
+
+				}
+			}
+
 			pom.write();
 		}
 
@@ -131,7 +164,29 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 		}
 	}
 
+	private int calculateLine(File file, String string) {
 
+		try {
+
+			FileInputStream fis = new FileInputStream(file);
+			InputStreamReader reader = new InputStreamReader(fis);
+			BufferedReader lineReader = new BufferedReader(reader);
+			int result = 0;
+			while (lineReader.ready()) {
+				result++;
+				String line = lineReader.readLine();
+				if (line.startsWith(string)) {
+					lineReader.close();
+					reader.close();
+					fis.close();
+					return result;
+				}
+			}
+		} catch (Exception e) {
+		}
+
+		return 1;
+	}
 
 	private void closeInputStream(InputStream stream) {
 		try {
