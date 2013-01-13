@@ -23,7 +23,7 @@
            <and>
              <objectState name="open" value="true"/>
              <not>
-               <objectState name="nature" value="com.remainsoftware.tycho.nature.core.pomnature"/>
+               <objectState name="nature" value="com.remainsoftware.tycho.pombuilder.core.pomnature"/>
              </not>
            </and>
          </visibility>
@@ -44,9 +44,54 @@
          <visibility>
            <and>
              <objectState name="open" value="true"/>
-             <objectState name="nature" value="com.remainsoftware.tycho.nature.core.pomnature"/>
+             <objectState name="nature" value="com.remainsoftware.tycho.pombuilder.core.pomnature"/>
            </and>
          </visibility>
       </objectContribution>
    </extension>
+      <extension
+            point="org.eclipse.ui.decorators">
+         <decorator
+               adaptable="true"
+               icon="icons/p1.gif"
+               id="com.remainsoftware.tycho.pombuilder.ui.decorator"
+               label="Pom Builder Decorator"
+               lightweight="true"
+               location="TOP_LEFT"
+               state="true">
+            <enablement>
+               <and>
+                  <objectState
+                        name="open"
+                        value="true">
+                  </objectState>
+                  <objectState
+                        name="nature"
+                        value="com.remainsoftware.tycho.pombuilder.core.pomnature">
+                  </objectState>
+               </and>
+            </enablement>
+         </decorator>
+         <decorator
+               adaptable="true"
+               icon="icons/p2.gif"
+               id="com.remainsoftware.tycho.pombuilder.ui.decorator2"
+               label="Pom Builder Decorator"
+               lightweight="true"
+               location="TOP_RIGHT"
+               state="true">
+            <enablement>
+               <and>
+                  <objectState
+                        name="open"
+                        value="true">
+                  </objectState>
+                  <objectState
+                        name="nature"
+                        value="com.remainsoftware.tycho.pombuilder.core.pomnature">
+                  </objectState>
+               </and>
+            </enablement>
+         </decorator>
+      </extension>
 </plugin>
