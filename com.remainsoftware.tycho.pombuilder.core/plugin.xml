@@ -22,6 +22,7 @@
          name="pombuilder"
          point="org.eclipse.core.resources.builders">
       <builder
+            callOnEmptyDelta="true"
             hasNature="true">
          <run
                class="com.remainsoftware.tycho.pombuilder.core.internal.Builder">

@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
@@ -96,7 +95,8 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 				return;
 			}
 		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR, Constants.CORE, e.getMessage(), e));
+			throw new CoreException(new Status(IStatus.ERROR, Constants.CORE,
+					e.getMessage(), e));
 		}
 
 	}
@@ -111,87 +111,7 @@ public class Visitor implements IResourceVisitor, IResourceDeltaVisitor {
 
 	}
 
-	private void parseManifest(IResource resource) throws Exception {
-
-		// remove previous markers
-		IMarker[] markers = resource.findMarkers(Constants.POM_PROBLEM_MARKER, false, IResource.DEPTH_ZERO);
-		for (IMarker marker : markers) {
-			marker.delete();
-		}
-
-		FileInputStream fisManifest = null;
-		boolean fisManifestOpen = false;
-
-		try {
-			fisManifest = new FileInputStream(resource.getLocation().toFile());
-			HashMap<String, String> map = new HashMap<String, String>();
-			ManifestElement.parseBundleManifest(fisManifest, map);
-			fisManifestOpen = true;
-
-			IPom pom = new Pom(resource);
-			pom.setModelVersion("4.0.0");
-			pom.setVersion(map.get("Bundle-Version"));
-			pom.setArtifactId(map.get("Bundle-SymbolicName"));
-			pom.setGroupId(map.get("Bundle-SymbolicName"));
-			pom.setPackaging("eclipse-plugin");
-
-			if (map.get("Parent-Project") == null || map.get("Parent-Project").trim().length() == 0) {
-				IMarker marker = resource.createMarker(Constants.POM_PROBLEM_MARKER);
-				marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
-				marker.setAttribute(IMarker.MESSAGE, "Variable '" + Constants.PARENT_PROJECT
-						+ "' has not been defined.");
-				marker.setAttribute(IMarker.LINE_NUMBER, 1);
-			} else {
-				try {
-					pom.setgetParentProject(map.get("Parent-Project"));
-				} catch (PomBuilderException e) {
-					IMarker marker = resource.createMarker(Constants.POM_PROBLEM_MARKER);
-					marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);
-					marker.setAttribute(IMarker.MESSAGE, e.getMessage());
-					marker.setAttribute(IMarker.LINE_NUMBER,
-							calculateLine(resource.getLocation().toFile(), "Parent-Project"));
-
-				}
-			}
-
-			pom.write();
-		}
-
-		finally {
-			if (fisManifestOpen) {
-				closeInputStream(fisManifest);
-			}
-		}
-	}
-
-	private int calculateLine(File file, String string) {
-
-		try {
-
-			FileInputStream fis = new FileInputStream(file);
-			InputStreamReader reader = new InputStreamReader(fis);
-			BufferedReader lineReader = new BufferedReader(reader);
-			int result = 0;
-			while (lineReader.ready()) {
-				result++;
-				String line = lineReader.readLine();
-				if (line.startsWith(string)) {
-					lineReader.close();
-					reader.close();
-					fis.close();
-					return result;
-				}
-			}
-		} catch (Exception e) {
-		}
-
-		return 1;
-	}
-
-	private void closeInputStream(InputStream stream) {
-		try {
-			stream.close();
-		} catch (IOException e) {
-		}
+	private void parseManifest(IResource resource) throws CoreException {
+		new ManifestParser().parse(resource);
 	}
 }

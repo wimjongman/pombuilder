@@ -24,4 +24,6 @@ public class Constants {
 
 	public static final String PARENT_PROJECT = "Parent-Project";
 
+	public static final String BUNDLE_ID = "com.remainsoftware.tycho.pombuilder.core";
+
 }

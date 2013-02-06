@@ -48,8 +48,6 @@ public class Pom implements IPom {
 
 	private static final String PROJECT = "project";
 
-	private static final String MODELVERSION = "modelversion";
-
 	private static final String PACKAGING = "packaging";
 
 	private static final String VERZION = "version";
@@ -119,7 +117,7 @@ public class Pom implements IPom {
 		Element projectElement = document.createElement(PROJECT);
 		document.appendChild(projectElement);
 
-		Element modelVersion = document.createElement(MODELVERSION);
+		Element modelVersion = document.createElement(MODEL_VERSION);
 		modelVersion.appendChild(document.createTextNode("4.0.0"));
 		projectElement.appendChild(modelVersion);
 
@@ -127,31 +125,38 @@ public class Pom implements IPom {
 		projectElement.appendChild(parent);
 
 		Element parentGroupId = document.createElement(GROUP_ID);
-		parentGroupId.appendChild(document.createTextNode("replace.with.real.parent.groupId"));
+		parentGroupId.appendChild(document
+				.createTextNode("replace.with.real.parent.groupId"));
 		parent.appendChild(parentGroupId);
 
 		Element parentArtifactId = document.createElement(ARTIFACT_ID);
-		parentArtifactId.appendChild(document.createTextNode("replace.with.real.parent.artifactId"));
+		parentArtifactId.appendChild(document
+				.createTextNode("replace.with.real.parent.artifactId"));
 		parent.appendChild(parentArtifactId);
 
 		Element parentVersion = document.createElement(VERZION);
-		parentVersion.appendChild(document.createTextNode("replace.with.real.parent.version"));
+		parentVersion.appendChild(document
+				.createTextNode("replace.with.real.parent.version"));
 		parent.appendChild(parentVersion);
 
 		Element groupId = document.createElement(GROUP_ID);
-		groupId.appendChild(document.createTextNode("replace.with.real.groupId"));
+		groupId.appendChild(document
+				.createTextNode("replace.with.real.groupId"));
 		projectElement.appendChild(groupId);
 
 		Element artifactId = document.createElement(ARTIFACT_ID);
-		artifactId.appendChild(document.createTextNode("replace.with.real.artifactId"));
+		artifactId.appendChild(document
+				.createTextNode("replace.with.real.artifactId"));
 		projectElement.appendChild(artifactId);
 
 		Element versionElement = document.createElement(VERZION);
-		versionElement.appendChild(document.createTextNode("replace.with.real.version"));
+		versionElement.appendChild(document
+				.createTextNode("replace.with.real.version"));
 		projectElement.appendChild(versionElement);
 
 		Element pack = document.createElement(PACKAGING);
-		pack.appendChild(document.createTextNode("replace.with.real.packaging.type"));
+		pack.appendChild(document
+				.createTextNode("replace.with.real.packaging.type"));
 		projectElement.appendChild(pack);
 
 	}
@@ -190,12 +195,20 @@ public class Pom implements IPom {
 		return this;
 	}
 
-	private void createSimpleElementWithText(String elementName, String textValue) {
+	private void createSimpleElementWithText(String elementName,
+			String textValue) {
 
 		Element project = document.getDocumentElement();
 		Element element = null;
-		if (project.getElementsByTagName(elementName).getLength() > 0) {
-			element = (Element) project.getElementsByTagName(elementName).item(0);
+		for (int i = 0; i < project.getElementsByTagName(elementName)
+				.getLength(); i++) {
+			element = (Element) project.getElementsByTagName(elementName).item(
+					i);
+			if (element.getParentNode() == project) {
+				break;
+			} else {
+				element = null;
+			}
 		}
 		if (element == null) {
 			element = document.createElement(elementName);
@@ -212,9 +225,11 @@ public class Pom implements IPom {
 		element.appendChild(document.createTextNode(textValue));
 	}
 
-	private void createParentElementWithText(String elementName, String textValue) {
+	private void createParentElementWithText(String elementName,
+			String textValue) {
 
-		Element project = (Element) document.getElementsByTagName(PROJECT).item(0);
+		Element project = (Element) document.getElementsByTagName(PROJECT)
+				.item(0);
 		Element parent = null;
 		if (project.getElementsByTagName(PARENT).getLength() == 0) {
 			parent = document.createElement(PARENT);
@@ -226,7 +241,8 @@ public class Pom implements IPom {
 		Element element = null;
 
 		if (parent.getElementsByTagName(elementName).getLength() > 0) {
-			element = (Element) parent.getElementsByTagName(elementName).item(0);
+			element = (Element) parent.getElementsByTagName(elementName)
+					.item(0);
 		}
 
 		if (element == null) {
@@ -271,18 +287,24 @@ public class Pom implements IPom {
 	}
 
 	@Override
-	public IPom setgetParentProject(String projectName) throws PomBuilderException {
+	public IPom setParentProject(String projectName)
+			throws PomBuilderException {
 
-		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+		IProject project = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject(projectName);
 		if (project == null) {
-			throw new PomBuilderException("Project " + projectName
-					+ " was not found. If applicable, check the Parent-Project field in the MANIFEST.MF");
+			throw new PomBuilderException(
+					"Project "
+							+ projectName
+							+ " was not found. If applicable, check the Parent-Project field in the MANIFEST.MF");
 		}
 
 		IResource pom = project.findMember("pom.xml");
 		if (pom == null) {
-			throw new PomBuilderException("File pom.xml was not found in project " + project
-					+ ". Make sure the project and the pom.xml exists before you refer to it.");
+			throw new PomBuilderException(
+					"File pom.xml was not found in project "
+							+ project
+							+ ". Make sure the project and the pom.xml exists before you refer to it.");
 		}
 
 		parentPom = new Pom(project);
@@ -295,14 +317,16 @@ public class Pom implements IPom {
 		return getParent();
 	}
 
-	private IPom setParentRelativePath(IPom parentPom) throws PomBuilderException {
+	private IPom setParentRelativePath(IPom parentPom)
+			throws PomBuilderException {
 
 		IProject project = parentPom.getProject();
 		File parent = new File(project.getLocationURI());
 		File pom = pomFile.getParentFile();
 
 		try {
-			createParentElementWithText(RELATIVE_PATH, FileUtil.getRelativeFile(parent, pom));
+			createParentElementWithText(RELATIVE_PATH,
+					FileUtil.getRelativeFile(parent, pom));
 		} catch (IOException e) {
 			throw new PomBuilderException(e);
 		}
@@ -352,10 +376,12 @@ public class Pom implements IPom {
 	public IPom write() throws PomBuilderException {
 		// write the content
 		try {
-			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			TransformerFactory transformerFactory = TransformerFactory
+					.newInstance();
 			Transformer transformer = transformerFactory.newTransformer();
 			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			transformer.setOutputProperty(
+					"{http://xml.apache.org/xslt}indent-amount", "2");
 			DOMSource source = new DOMSource(document);
 			StreamResult result = new StreamResult(pomFile);
 			transformer.transform(source, result);

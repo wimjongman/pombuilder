@@ -78,7 +78,7 @@ public interface IPom {
 	 *             if the project does not exist
 	 * @return the parent pom
 	 */
-	IPom setgetParentProject(String project) throws PomBuilderException;
+	IPom setParentProject(String project) throws PomBuilderException;
 
 	/**
 	 * @return the {@link IPom} that is the parent of this pom. Could be null if
