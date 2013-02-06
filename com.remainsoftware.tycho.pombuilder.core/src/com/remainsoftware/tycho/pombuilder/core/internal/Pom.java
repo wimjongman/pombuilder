@@ -309,6 +309,7 @@ public class Pom implements IPom {
 
 		parentPom = new Pom(project);
 
+		setGroupId(parentPom.getGroupId());
 		setParentGroupId(parentPom.getGroupId());
 		setParentArtifactId(parentPom.getArtifactId());
 		setParentVersion(parentPom.getVersion());

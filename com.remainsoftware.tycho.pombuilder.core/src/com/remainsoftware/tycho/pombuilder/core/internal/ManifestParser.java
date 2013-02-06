@@ -18,6 +18,11 @@ import com.remainsoftware.tycho.pombuilder.core.PomBuilderException;
 
 public class ManifestParser implements IParser {
 
+	private static final String PARENT_PROJECT = "Parent-Project";
+	private static final String ECLIPSE_PLUGIN = "eclipse-plugin";
+	private static final String BUNDLE_VERSION = "Bundle-Version";
+	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName";
+
 	@Override
 	public void parse(IResource resource) throws CoreException {
 
@@ -35,17 +40,21 @@ public class ManifestParser implements IParser {
 			fisManifest = new FileInputStream(resource.getLocation().toFile());
 			HashMap<String, String> map = new HashMap<String, String>();
 			ManifestElement.parseBundleManifest(fisManifest, map);
+
+			ManifestElement[] header = ManifestElement.parseHeader(
+					BUNDLE_SYMBOLIC_NAME, map.get(BUNDLE_SYMBOLIC_NAME));
+			String symbolicName = header[0].getValueComponents()[0];
+
 			fisManifestOpen = true;
 
 			IPom pom = new Pom(resource);
 			pom.setModelVersion("4.0.0");
-			pom.setVersion(map.get("Bundle-Version"));
-			pom.setArtifactId(map.get("Bundle-SymbolicName"));
-			pom.setGroupId(map.get("Bundle-SymbolicName"));
-			pom.setPackaging("eclipse-plugin");
+			pom.setVersion(map.get(BUNDLE_VERSION));
+			pom.setArtifactId(symbolicName);
+			pom.setPackaging(ECLIPSE_PLUGIN);
 
-			if (map.get("Parent-Project") == null
-					|| map.get("Parent-Project").trim().length() == 0) {
+			if (map.get(PARENT_PROJECT) == null
+					|| map.get(PARENT_PROJECT).trim().length() == 0) {
 				IMarker marker = resource
 						.createMarker(Constants.POM_PROBLEM_MARKER);
 				marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
@@ -53,9 +62,9 @@ public class ManifestParser implements IParser {
 						+ Constants.PARENT_PROJECT + "' has not been defined.");
 				marker.setAttribute(IMarker.LINE_NUMBER, 1);
 			} else {
-				
+
 				try {
-					pom.setParentProject(map.get("Parent-Project"));
+					pom.setParentProject(map.get(PARENT_PROJECT));
 				} catch (PomBuilderException e) {
 					IMarker marker = resource
 							.createMarker(Constants.POM_PROBLEM_MARKER);
@@ -65,7 +74,7 @@ public class ManifestParser implements IParser {
 					marker.setAttribute(
 							IMarker.LINE_NUMBER,
 							calculateLine(resource.getLocation().toFile(),
-									"Parent-Project"));
+									PARENT_PROJECT));
 				}
 			}
 
