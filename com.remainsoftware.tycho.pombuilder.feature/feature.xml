@@ -2,7 +2,7 @@
 <feature
       id="com.remainsoftware.tycho.pombuilder.feature"
       label="POM Builder Feature"
-      version="0.1.0.qualifier"
+      version="0.2.0.qualifier"
       provider-name="Remain Software">
 
    <description url="http://www.example.com/description">
