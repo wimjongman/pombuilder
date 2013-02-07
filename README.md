@@ -16,4 +16,4 @@ The Manifest then contains an error, add the field
 <b>Parent-Project: name.of.parent.project</b>
 
 
-Refresh of resources is buggy. Try to refresh the project if you have problems.
+If you change the version of the parent pom, do a complete rebuild to pick up the changes.
